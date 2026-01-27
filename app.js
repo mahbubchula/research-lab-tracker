@@ -1,8 +1,8 @@
 // Research Lab Tracker with GitHub Gist Sync
-// Version 2.0
+// Version 2.1 - Added Edit Functionality
 
 // Configuration
-const SYNC_INTERVAL = 5000; // 5 seconds - Much faster!
+const SYNC_INTERVAL = 30000; // 30 seconds
 const GITHUB_API = 'https://api.github.com';
 
 // Data Storage
@@ -23,6 +23,7 @@ let syncConfig = {
 };
 
 let syncIntervalId = null;
+let editingItem = null; // Track which item is being edited
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
@@ -248,28 +249,52 @@ function initializeEventListeners() {
     document.getElementById('importFile').addEventListener('change', importData);
 
     // Students
-    document.getElementById('addStudentBtn').addEventListener('click', () => toggleForm('studentForm', true));
-    document.getElementById('cancelStudentBtn').addEventListener('click', () => toggleForm('studentForm', false));
+    document.getElementById('addStudentBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('studentForm', true);
+    });
+    document.getElementById('cancelStudentBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('studentForm', false);
+    });
     document.getElementById('studentFormElement').addEventListener('submit', handleStudentSubmit);
 
     // Goals
-    document.getElementById('addGoalBtn').addEventListener('click', () => toggleForm('goalForm', true));
-    document.getElementById('cancelGoalBtn').addEventListener('click', () => toggleForm('goalForm', false));
+    document.getElementById('addGoalBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('goalForm', true);
+    });
+    document.getElementById('cancelGoalBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('goalForm', false);
+    });
     document.getElementById('goalFormElement').addEventListener('submit', handleGoalSubmit);
     document.getElementById('filterGoalType').addEventListener('change', renderGoals);
     document.getElementById('filterGoalStudent').addEventListener('change', renderGoals);
     document.getElementById('filterGoalStatus').addEventListener('change', renderGoals);
 
     // Activities
-    document.getElementById('addActivityBtn').addEventListener('click', () => toggleForm('activityForm', true));
-    document.getElementById('cancelActivityBtn').addEventListener('click', () => toggleForm('activityForm', false));
+    document.getElementById('addActivityBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('activityForm', true);
+    });
+    document.getElementById('cancelActivityBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('activityForm', false);
+    });
     document.getElementById('activityFormElement').addEventListener('submit', handleActivitySubmit);
     document.getElementById('filterActivityStudent').addEventListener('change', renderActivities);
     document.getElementById('filterActivityDate').addEventListener('change', renderActivities);
 
     // Publications
-    document.getElementById('addPublicationBtn').addEventListener('click', () => toggleForm('publicationForm', true));
-    document.getElementById('cancelPublicationBtn').addEventListener('click', () => toggleForm('publicationForm', false));
+    document.getElementById('addPublicationBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('publicationForm', true);
+    });
+    document.getElementById('cancelPublicationBtn').addEventListener('click', () => {
+        editingItem = null;
+        toggleForm('publicationForm', false);
+    });
     document.getElementById('publicationFormElement').addEventListener('submit', handlePublicationSubmit);
     document.getElementById('filterPublicationStatus').addEventListener('change', renderPublications);
 
@@ -292,7 +317,6 @@ async function handleSyncSetup(e) {
     syncConfig.syncEnabled = true;
     saveSyncConfig();
 
-    // Test connection and initial sync
     const success = await syncToGist();
     
     if (success) {
@@ -348,6 +372,7 @@ function toggleForm(formId, show) {
     
     if (!show) {
         form.querySelector('form').reset();
+        editingItem = null;
     }
     
     if (show) {
@@ -463,18 +488,44 @@ function updateDashboard() {
 async function handleStudentSubmit(e) {
     e.preventDefault();
     
-    const student = {
-        id: generateId(),
-        name: document.getElementById('studentName').value,
-        email: document.getElementById('studentEmail').value,
-        role: document.getElementById('studentRole').value,
-        createdAt: new Date().toISOString()
-    };
+    if (editingItem) {
+        // Update existing student
+        const student = storage.students.find(s => s.id === editingItem);
+        if (student) {
+            student.name = document.getElementById('studentName').value;
+            student.email = document.getElementById('studentEmail').value;
+            student.role = document.getElementById('studentRole').value;
+            student.updatedAt = new Date().toISOString();
+        }
+    } else {
+        // Create new student
+        const student = {
+            id: generateId(),
+            name: document.getElementById('studentName').value,
+            email: document.getElementById('studentEmail').value,
+            role: document.getElementById('studentRole').value,
+            createdAt: new Date().toISOString()
+        };
+        storage.students.push(student);
+    }
 
-    storage.students.push(student);
     await saveData();
     updateUI();
+    editingItem = null;
     toggleForm('studentForm', false);
+}
+
+function editStudent(id) {
+    const student = storage.students.find(s => s.id === id);
+    if (!student) return;
+
+    editingItem = id;
+    document.getElementById('studentName').value = student.name;
+    document.getElementById('studentEmail').value = student.email || '';
+    document.getElementById('studentRole').value = student.role;
+    
+    toggleForm('studentForm', true);
+    document.querySelector('#studentForm h3').textContent = 'Edit Lab Member';
 }
 
 function renderStudents() {
@@ -504,6 +555,7 @@ function renderStudents() {
                     ${student.email ? `<div class="student-email">${student.email}</div>` : ''}
                 </div>
                 <div class="item-actions">
+                    <button class="btn btn-secondary" onclick="editStudent('${student.id}')">✏️ Edit</button>
                     <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">Delete</button>
                 </div>
             </div>
@@ -524,21 +576,51 @@ async function deleteStudent(id) {
 async function handleGoalSubmit(e) {
     e.preventDefault();
     
-    const goal = {
-        id: generateId(),
-        title: document.getElementById('goalTitle').value,
-        description: document.getElementById('goalDescription').value,
-        type: document.getElementById('goalType').value,
-        studentId: document.getElementById('goalStudent').value,
-        deadline: document.getElementById('goalDeadline').value,
-        completed: false,
-        createdAt: new Date().toISOString()
-    };
+    if (editingItem) {
+        // Update existing goal
+        const goal = storage.goals.find(g => g.id === editingItem);
+        if (goal) {
+            goal.title = document.getElementById('goalTitle').value;
+            goal.description = document.getElementById('goalDescription').value;
+            goal.type = document.getElementById('goalType').value;
+            goal.studentId = document.getElementById('goalStudent').value;
+            goal.deadline = document.getElementById('goalDeadline').value;
+            goal.updatedAt = new Date().toISOString();
+        }
+    } else {
+        // Create new goal
+        const goal = {
+            id: generateId(),
+            title: document.getElementById('goalTitle').value,
+            description: document.getElementById('goalDescription').value,
+            type: document.getElementById('goalType').value,
+            studentId: document.getElementById('goalStudent').value,
+            deadline: document.getElementById('goalDeadline').value,
+            completed: false,
+            createdAt: new Date().toISOString()
+        };
+        storage.goals.push(goal);
+    }
 
-    storage.goals.push(goal);
     await saveData();
     updateUI();
+    editingItem = null;
     toggleForm('goalForm', false);
+}
+
+function editGoal(id) {
+    const goal = storage.goals.find(g => g.id === id);
+    if (!goal) return;
+
+    editingItem = id;
+    document.getElementById('goalTitle').value = goal.title;
+    document.getElementById('goalDescription').value = goal.description || '';
+    document.getElementById('goalType').value = goal.type;
+    document.getElementById('goalStudent').value = goal.studentId;
+    document.getElementById('goalDeadline').value = goal.deadline;
+    
+    toggleForm('goalForm', true);
+    document.querySelector('#goalForm h3').textContent = 'Edit Goal';
 }
 
 function renderGoals() {
@@ -581,6 +663,7 @@ function renderGoals() {
                     <div class="item-title">${goal.title}</div>
                     <div class="item-actions">
                         ${!goal.completed ? `<button class="btn btn-success" onclick="completeGoal('${goal.id}')">✓ Complete</button>` : ''}
+                        <button class="btn btn-secondary" onclick="editGoal('${goal.id}')">✏️ Edit</button>
                         <button class="btn btn-danger" onclick="deleteGoal('${goal.id}')">Delete</button>
                     </div>
                 </div>
@@ -623,20 +706,50 @@ async function deleteGoal(id) {
 async function handleActivitySubmit(e) {
     e.preventDefault();
     
-    const activity = {
-        id: generateId(),
-        title: document.getElementById('activityTitle').value,
-        description: document.getElementById('activityDescription').value,
-        studentId: document.getElementById('activityStudent').value,
-        date: document.getElementById('activityDate').value,
-        hours: document.getElementById('activityHours').value || null,
-        createdAt: new Date().toISOString()
-    };
+    if (editingItem) {
+        // Update existing activity
+        const activity = storage.activities.find(a => a.id === editingItem);
+        if (activity) {
+            activity.title = document.getElementById('activityTitle').value;
+            activity.description = document.getElementById('activityDescription').value;
+            activity.studentId = document.getElementById('activityStudent').value;
+            activity.date = document.getElementById('activityDate').value;
+            activity.hours = document.getElementById('activityHours').value || null;
+            activity.updatedAt = new Date().toISOString();
+        }
+    } else {
+        // Create new activity
+        const activity = {
+            id: generateId(),
+            title: document.getElementById('activityTitle').value,
+            description: document.getElementById('activityDescription').value,
+            studentId: document.getElementById('activityStudent').value,
+            date: document.getElementById('activityDate').value,
+            hours: document.getElementById('activityHours').value || null,
+            createdAt: new Date().toISOString()
+        };
+        storage.activities.push(activity);
+    }
 
-    storage.activities.push(activity);
     await saveData();
     updateUI();
+    editingItem = null;
     toggleForm('activityForm', false);
+}
+
+function editActivity(id) {
+    const activity = storage.activities.find(a => a.id === id);
+    if (!activity) return;
+
+    editingItem = id;
+    document.getElementById('activityTitle').value = activity.title;
+    document.getElementById('activityDescription').value = activity.description;
+    document.getElementById('activityStudent').value = activity.studentId;
+    document.getElementById('activityDate').value = activity.date;
+    document.getElementById('activityHours').value = activity.hours || '';
+    
+    toggleForm('activityForm', true);
+    document.querySelector('#activityForm h3').textContent = 'Edit Activity';
 }
 
 function renderActivities() {
@@ -670,6 +783,7 @@ function renderActivities() {
                 <div class="item-header">
                     <div class="item-title">${activity.title}</div>
                     <div class="item-actions">
+                        <button class="btn btn-secondary" onclick="editActivity('${activity.id}')">✏️ Edit</button>
                         <button class="btn btn-danger" onclick="deleteActivity('${activity.id}')">Delete</button>
                     </div>
                 </div>
@@ -697,22 +811,56 @@ async function deleteActivity(id) {
 async function handlePublicationSubmit(e) {
     e.preventDefault();
     
-    const publication = {
-        id: generateId(),
-        title: document.getElementById('publicationTitle').value,
-        authors: document.getElementById('publicationAuthors').value,
-        status: document.getElementById('publicationStatus').value,
-        year: document.getElementById('publicationYear').value || null,
-        venue: document.getElementById('publicationVenue').value,
-        doi: document.getElementById('publicationDOI').value,
-        notes: document.getElementById('publicationNotes').value,
-        createdAt: new Date().toISOString()
-    };
+    if (editingItem) {
+        // Update existing publication
+        const publication = storage.publications.find(p => p.id === editingItem);
+        if (publication) {
+            publication.title = document.getElementById('publicationTitle').value;
+            publication.authors = document.getElementById('publicationAuthors').value;
+            publication.status = document.getElementById('publicationStatus').value;
+            publication.year = document.getElementById('publicationYear').value || null;
+            publication.venue = document.getElementById('publicationVenue').value;
+            publication.doi = document.getElementById('publicationDOI').value;
+            publication.notes = document.getElementById('publicationNotes').value;
+            publication.updatedAt = new Date().toISOString();
+        }
+    } else {
+        // Create new publication
+        const publication = {
+            id: generateId(),
+            title: document.getElementById('publicationTitle').value,
+            authors: document.getElementById('publicationAuthors').value,
+            status: document.getElementById('publicationStatus').value,
+            year: document.getElementById('publicationYear').value || null,
+            venue: document.getElementById('publicationVenue').value,
+            doi: document.getElementById('publicationDOI').value,
+            notes: document.getElementById('publicationNotes').value,
+            createdAt: new Date().toISOString()
+        };
+        storage.publications.push(publication);
+    }
 
-    storage.publications.push(publication);
     await saveData();
     updateUI();
+    editingItem = null;
     toggleForm('publicationForm', false);
+}
+
+function editPublication(id) {
+    const publication = storage.publications.find(p => p.id === id);
+    if (!publication) return;
+
+    editingItem = id;
+    document.getElementById('publicationTitle').value = publication.title;
+    document.getElementById('publicationAuthors').value = publication.authors;
+    document.getElementById('publicationStatus').value = publication.status;
+    document.getElementById('publicationYear').value = publication.year || '';
+    document.getElementById('publicationVenue').value = publication.venue || '';
+    document.getElementById('publicationDOI').value = publication.doi || '';
+    document.getElementById('publicationNotes').value = publication.notes || '';
+    
+    toggleForm('publicationForm', true);
+    document.querySelector('#publicationForm h3').textContent = 'Edit Publication';
 }
 
 function renderPublications() {
@@ -747,6 +895,7 @@ function renderPublications() {
                 <div class="item-header">
                     <div class="item-title">${pub.title}</div>
                     <div class="item-actions">
+                        <button class="btn btn-secondary" onclick="editPublication('${pub.id}')">✏️ Edit</button>
                         <button class="btn btn-danger" onclick="deletePublication('${pub.id}')">Delete</button>
                     </div>
                 </div>
