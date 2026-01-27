@@ -15,11 +15,69 @@
                 <p class="subtitle">Collaborative Goal & Activity Tracking</p>
             </div>
             <div class="header-actions">
-                <button id="exportBtn" class="btn btn-secondary">📤 Export Data</button>
-                <button id="importBtn" class="btn btn-secondary">📥 Import Data</button>
+                <div class="sync-status" id="syncStatus">
+                    <span class="status-indicator" id="statusIndicator">⚪</span>
+                    <span id="statusText">Not Connected</span>
+                </div>
+                <button id="syncNowBtn" class="btn btn-secondary" title="Sync Now">🔄</button>
+                <button id="setupSyncBtn" class="btn btn-secondary">⚙️ Setup Sync</button>
+                <button id="exportBtn" class="btn btn-secondary">📤 Export</button>
+                <button id="importBtn" class="btn btn-secondary">📥 Import</button>
                 <input type="file" id="importFile" accept=".json" style="display: none;">
             </div>
         </header>
+
+        <!-- Sync Setup Modal -->
+        <div id="syncModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>⚙️ Setup GitHub Sync</h2>
+                    <button class="close-btn" id="closeSyncModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="info-box">
+                        <h3>🚀 Enable Real-time Collaboration</h3>
+                        <p>Sync your data with GitHub Gists so all lab members can collaborate in real-time.</p>
+                    </div>
+
+                    <div class="setup-steps">
+                        <h3>Quick Setup:</h3>
+                        <ol>
+                            <li>Create a GitHub Personal Access Token with <code>gist</code> scope: <a href="https://github.com/settings/tokens/new" target="_blank">Create Token</a></li>
+                            <li>Create a new SECRET Gist: <a href="https://gist.github.com/" target="_blank">Create Gist</a>
+                                <br><small>Filename: <code>research-lab-data.json</code>, Content: <code>{"students":[],"goals":[],"activities":[],"publications":[]}</code></small>
+                            </li>
+                            <li>Copy the Gist ID from the URL</li>
+                            <li>Enter both below and click Connect</li>
+                        </ol>
+                    </div>
+
+                    <form id="syncSetupForm">
+                        <div class="form-group">
+                            <label for="githubToken">GitHub Personal Access Token *</label>
+                            <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx" required>
+                            <small>Token needs 'gist' scope only. <a href="https://github.com/settings/tokens" target="_blank">Manage tokens</a></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="gistId">Gist ID *</label>
+                            <input type="text" id="gistId" placeholder="abc123def456..." required>
+                            <small>Found in gist URL: gist.github.com/username/<strong>[GIST_ID]</strong></small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">🔗 Connect & Sync</button>
+                            <button type="button" id="disconnectBtn" class="btn btn-danger">❌ Disconnect</button>
+                        </div>
+                    </form>
+
+                    <div class="info-box" style="margin-top: 20px;">
+                        <h4>📖 Full Instructions</h4>
+                        <p>See the <a href="README.md" target="_blank">README.md</a> file for detailed setup instructions and troubleshooting.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Navigation Tabs -->
         <nav class="tabs">
