@@ -1,168 +1,333 @@
 # Research Lab Tracker 🔬
 
-A comprehensive web-based tool for tracking research goals, activities, and publications for academic labs. Perfect for principal investigators and their students to collaborate and monitor progress.
+A comprehensive web-based tool for tracking research goals, activities, and publications for academic labs. Perfect for principal investigators and their students to collaborate and monitor progress with **real-time data synchronization**.
 
 ## Features
 
+✅ **Real-time Collaboration** - All lab members see the same data
+✅ **Automatic Sync** - Data syncs via GitHub Gists
 ✅ **Weekly & Monthly Goals** - Set and track time-bound research objectives
 ✅ **Activity Logging** - Record daily research activities and progress
 ✅ **Publication Tracker** - Manage papers from draft to publication
 ✅ **Student Dashboard** - Individual views for each lab member
 ✅ **Progress Visualization** - Charts and progress indicators
 ✅ **Data Export/Import** - Backup and restore your data
-✅ **Collaborative** - All lab members can view and update
-✅ **No Backend Required** - Runs entirely in the browser
+✅ **No Backend Required** - Uses GitHub Gists as database
 
-## Quick Start
+## Quick Setup (5 minutes)
 
-### Option 1: GitHub Pages (Recommended)
+### Step 1: Create GitHub Repository
 
-1. Fork or clone this repository
-2. Go to Settings → Pages
-3. Source: Deploy from branch `main`
-4. Folder: `/ (root)`
-5. Save and wait a few minutes
-6. Access at: `https://yourusername.github.io/research-lab-tracker`
+1. Go to https://github.com/new
+2. Repository name: `research-lab-tracker`
+3. Make it **Public** (required for GitHub Pages)
+4. Click "Create repository"
+5. Upload all files from this project
 
-### Option 2: Local Development
+### Step 2: Enable GitHub Pages
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/research-lab-tracker.git
-cd research-lab-tracker
+1. Go to repository **Settings** → **Pages**
+2. Source: "Deploy from a branch"
+3. Branch: `main`, folder: `/ (root)`
+4. Click **Save**
+5. Wait 2-3 minutes
+6. Your site will be at: `https://yourusername.github.io/research-lab-tracker`
 
-# Open with a local server (Python example)
-python -m http.server 8000
+### Step 3: Set Up Data Synchronization
 
-# Or use Node.js
-npx serve
+#### A. Create GitHub Personal Access Token
 
-# Visit http://localhost:8000
-```
+1. Go to https://github.com/settings/tokens
+2. Click **"Generate new token"** → **"Generate new token (classic)"**
+3. Note: `Research Lab Tracker`
+4. Expiration: `No expiration` or `1 year`
+5. Select scopes: ✅ **`gist`** (only this one needed)
+6. Click **"Generate token"**
+7. **COPY THE TOKEN** - you'll only see it once! (starts with `ghp_...`)
+
+#### B. Create GitHub Gist (Data Storage)
+
+1. Go to https://gist.github.com/
+2. Click **"+ New gist"** (top right)
+3. Filename: `research-lab-data.json`
+4. Content: Paste this:
+   ```json
+   {
+     "students": [],
+     "goals": [],
+     "activities": [],
+     "publications": []
+   }
+   ```
+5. Create **SECRET gist** (important for privacy!)
+6. Click **"Create secret gist"**
+7. **COPY THE GIST ID** from URL: `https://gist.github.com/yourusername/[THIS-IS-THE-ID]`
+
+#### C. Configure the App
+
+1. Open your deployed site: `https://yourusername.github.io/research-lab-tracker`
+2. Click **"⚙️ Setup Sync"** button (top right)
+3. Enter:
+   - **GitHub Token**: Paste your token (`ghp_...`)
+   - **Gist ID**: Paste your gist ID
+4. Click **"Save & Connect"**
+5. ✅ You should see "✓ Connected" status
+
+### Step 4: Share with Students
+
+Send your students:
+1. **App URL**: `https://yourusername.github.io/research-lab-tracker`
+2. **GitHub Token**: The same token you created
+3. **Gist ID**: The same gist ID
+
+**Each student needs to:**
+1. Visit the app URL
+2. Click "⚙️ Setup Sync"
+3. Enter the same token and gist ID
+4. Now everyone sees the same data! 🎉
 
 ## Usage Guide
 
-### First Time Setup
+### First Time Setup (Lab PI)
 
-1. **Add Lab Members**: Click "Settings" → Add student names
-2. **Set Initial Goals**: Create your first weekly/monthly goals
-3. **Start Tracking**: Log activities and update progress
+1. **Set up sync** (follow Step 3 above)
+2. **Add lab members**: Go to "Students" tab → Add each student
+3. **Set initial goals**: Create first weekly/monthly goals
+4. **Share access**: Give students the URL, token, and gist ID
+
+### For Students
+
+1. Visit the app URL
+2. Enter sync credentials (token + gist ID) - one time only
+3. Start logging activities and updating goals
+4. All changes sync automatically!
 
 ### Weekly Workflow
 
-1. **Monday**: Set weekly goals for each student
-2. **Daily**: Log research activities and progress
-3. **Friday**: Review completion status
-4. **Monthly**: Set monthly objectives and review past month
+1. **Monday**: PI sets weekly goals for each student
+2. **Daily**: Students log research activities and progress
+3. **Update goals**: Mark completed, add notes
+4. **Friday**: Review completion status together
+5. **Monthly**: Set monthly objectives and review achievements
 
-### Publication Tracking
+## Features Guide
 
-- **Draft**: Initial writing phase
-- **In Progress**: Active development
-- **Submitted**: Under journal review
-- **Under Review**: Peer review stage
-- **Published**: Accepted and published
+### 📊 Dashboard
+- Overview of all active goals
+- Recent activities from all lab members
+- Publication statistics
+- Quick completion actions
 
-## Data Management
+### 🎯 Goals
+- Create weekly or monthly goals
+- Assign to specific students
+- Set deadlines and track progress
+- Mark as completed
+- Filter by type, student, or status
 
-### Storage
-- Data is stored in browser's localStorage
-- Each browser/device has separate storage
+### 📝 Activities
+- Log daily research work
+- Record hours spent
+- Add detailed descriptions
+- Filter by student or date
+- View timeline of all activities
+
+### 📚 Publications
+- Track papers through pipeline
+- Statuses: Draft → In Progress → Submitted → Under Review → Accepted → Published
+- Store DOI/URLs
+- Add notes and deadlines
+- Filter by status
+
+### 👥 Students
+- Manage lab members
+- Different roles: PhD, Master's, Undergraduate, Postdoc, PI
+- Contact information
+- Easy management
+
+## Data Synchronization
+
+### How It Works
+- Data stored in a private GitHub Gist
+- App reads/writes to Gist via GitHub API
+- Changes sync every 30 seconds automatically
+- Manual sync with "🔄 Sync Now" button
+
+### Sync Status Indicators
+- **🟢 Connected**: Sync working properly
+- **🟡 Syncing**: Data being synchronized
+- **🔴 Disconnected**: Check credentials or internet
+- **Last sync**: Shows time of last successful sync
+
+### Troubleshooting Sync
+
+**"Sync failed" error:**
+- Check internet connection
+- Verify token hasn't expired
+- Confirm gist ID is correct
+- Regenerate token if needed
+
+**Data not appearing:**
+- Wait 30 seconds for auto-sync
+- Click "🔄 Sync Now" button
+- Check all users have same gist ID
+- Verify gist contains valid JSON
+
+**Changes not saving:**
+- Check sync status is "Connected"
+- Ensure token has `gist` scope
+- Try disconnecting and reconnecting
+
+## Security & Privacy
+
+### Token Safety
+- ⚠️ **Never share tokens publicly** (only with your lab members)
+- Store token securely
+- Can revoke and regenerate anytime at https://github.com/settings/tokens
+- Each lab should have unique token
+
+### Data Privacy
+- Use **SECRET gist** (not public)
+- Only people with token + gist ID can access
+- No data stored on external servers (only GitHub)
 - Export regularly for backup
 
-### Export Data
-1. Click "Export Data" button
-2. Save the JSON file
-3. Store in a safe location
+### Best Practices
+- Change token every 6-12 months
+- Don't commit token to public repositories
+- Each lab member stores credentials locally (browser)
+- Regular backups via Export function
 
-### Import Data
-1. Click "Import Data" button
-2. Select your JSON backup file
-3. Data will be restored
+## Backup & Export
 
-### Sync Across Devices (Optional)
-- Export from Device A
-- Import to Device B
-- Or use GitHub Gists (see Advanced Usage)
+### Manual Backup
+1. Click **"📤 Export Data"**
+2. Saves JSON file with all data
+3. Store in safe location
+4. Can import anytime
+
+### Auto-Backup (Recommended)
+- Data already backed up in GitHub Gist
+- View/download from: `https://gist.github.com/yourusername/[gist-id]`
+- Gist has version history
+
+### Restore from Backup
+1. Click **"📥 Import Data"**
+2. Select JSON backup file
+3. Confirm replacement
+4. Data syncs to all devices
 
 ## Customization
 
-### Colors & Branding
+### Change Colors (University Branding)
 Edit `styles.css`:
 ```css
 :root {
-    --primary-color: #2563eb; /* Change to your university colors */
-    --secondary-color: #7c3aed;
+    --primary-color: #2563eb;     /* Main color */
+    --secondary-color: #7c3aed;   /* Accent color */
 }
 ```
 
-### Lab Information
+### Change Lab Name
 Edit `index.html`:
 ```html
-<h1>Your Lab Name</h1>
+<h1>🔬 Your Lab Name Here</h1>
+```
+
+### Adjust Sync Interval
+Edit `app.js`:
+```javascript
+const SYNC_INTERVAL = 30000; // milliseconds (30 seconds default)
 ```
 
 ## Advanced Usage
 
-### GitHub Gist Sync (Optional)
+### Multiple Labs
+- Each lab needs unique gist
+- Use different tokens for security
+- Can deploy multiple instances
 
-For automatic cloud sync across devices:
+### Offline Mode
+- App caches data locally
+- Works without internet
+- Syncs when connection restored
 
-1. Create a GitHub Personal Access Token
-2. Create a private Gist
-3. Add sync functionality (see `sync-addon.js`)
-
-### Custom Fields
-
-Add custom tracking fields by editing `app.js`:
-```javascript
-// Add to goal object
-customField: document.getElementById('custom-field').value
-```
+### Mobile Usage
+- Fully responsive design
+- Works on phones and tablets
+- Save to home screen (PWA-like)
 
 ## Browser Compatibility
 
 - ✅ Chrome/Edge (recommended)
-- ✅ Firefox
+- ✅ Firefox  
 - ✅ Safari
 - ✅ Mobile browsers
+- Requires JavaScript enabled
+- Needs localStorage support
 
 ## Troubleshooting
 
-### Data Not Saving
-- Check browser localStorage is enabled
-- Clear cache and reload
-- Try a different browser
+### Sync Issues
+| Problem | Solution |
+|---------|----------|
+| Not syncing | Check token & gist ID in settings |
+| Old data showing | Click "🔄 Sync Now" or refresh page |
+| Sync failed | Verify token hasn't expired |
+| Slow sync | Check internet connection |
 
-### GitHub Pages Not Working
-- Ensure repository is public
-- Check Pages settings are correct
-- Wait 5-10 minutes after enabling
+### GitHub Pages Issues
+| Problem | Solution |
+|---------|----------|
+| 404 error | Wait 5-10 minutes after enabling Pages |
+| Not updating | Check main branch has latest files |
+| Mixed content | Ensure repository is public |
 
-### Import Fails
-- Verify JSON file format
-- Check file isn't corrupted
-- Try a different export
+### Data Issues
+| Problem | Solution |
+|---------|----------|
+| Data disappeared | Import from backup or check gist |
+| Duplicate entries | Clear browser cache, re-sync |
+| Can't add items | Check sync is connected |
 
-## Security & Privacy
+## FAQ
 
-- All data stored locally in your browser
-- No data sent to external servers
-- Export files contain sensitive research info - protect them
-- Use private repository if needed (requires GitHub Pro for Pages)
+**Q: Is this free?**  
+A: Yes! Uses free GitHub features only.
 
-## Contributing
+**Q: How many students can use it?**  
+A: Unlimited. GitHub Gists support any number of collaborators.
 
-Feel free to fork and customize for your lab's needs!
+**Q: Is data secure?**  
+A: Yes, if you use a SECRET gist and don't share tokens publicly.
 
-## License
+**Q: What if token expires?**  
+A: Generate new token, update in settings, share with lab.
 
-MIT License - Feel free to use and modify
+**Q: Can I use without sync?**  
+A: Yes, but data stays local (not collaborative).
+
+**Q: Does it work offline?**  
+A: Basic features yes, but sync needs internet.
+
+**Q: Can I migrate to my own server later?**  
+A: Yes, export data and use with any backend.
 
 ## Support
 
-For issues or questions, open a GitHub issue in this repository.
+- **Issues**: Open issue in this repository
+- **Questions**: Check FAQ above
+- **Feature requests**: Submit via GitHub issues
+
+## License
+
+MIT License - Free to use and modify
+
+## Credits
+
+Built for research labs worldwide 🌍  
+Helping scientists track goals and stay productive 🔬
 
 ---
 
-**Made with ❤️ for research labs worldwide**
+**Version 2.0** - Now with real-time collaboration! 🎉
