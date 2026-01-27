@@ -1,4 +1,10 @@
-// Research Lab Tracker - Main Application
+// Research Lab Tracker with GitHub Gist Sync
+// Version 2.0
+
+// Configuration
+const SYNC_INTERVAL = 30000; // 30 seconds
+const GITHUB_API = 'https://api.github.com';
+
 // Data Storage
 const storage = {
     students: [],
@@ -7,19 +13,173 @@ const storage = {
     publications: []
 };
 
+// Sync Configuration
+let syncConfig = {
+    token: null,
+    gistId: null,
+    lastSync: null,
+    syncEnabled: false,
+    syncing: false
+};
+
+let syncIntervalId = null;
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
+    loadSyncConfig();
     loadData();
     initializeEventListeners();
     updateUI();
     
-    // Set default date to today
+    // Set default dates
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('activityDate').value = today;
-    document.getElementById('goalDeadline').valueAsDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 1 week from now
+    document.getElementById('goalDeadline').valueAsDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    // Start sync if configured
+    if (syncConfig.syncEnabled) {
+        startAutoSync();
+        syncFromGist();
+    }
 });
 
-// Load data from localStorage
+// ===== SYNC FUNCTIONS =====
+
+function loadSyncConfig() {
+    const saved = localStorage.getItem('syncConfig');
+    if (saved) {
+        syncConfig = JSON.parse(saved);
+    }
+    updateSyncStatus();
+}
+
+function saveSyncConfig() {
+    localStorage.setItem('syncConfig', JSON.stringify(syncConfig));
+}
+
+function updateSyncStatus() {
+    const indicator = document.getElementById('statusIndicator');
+    const statusText = document.getElementById('statusText');
+    
+    if (syncConfig.syncing) {
+        indicator.textContent = '🟡';
+        statusText.textContent = 'Syncing...';
+        indicator.classList.remove('connected');
+    } else if (syncConfig.syncEnabled && syncConfig.token && syncConfig.gistId) {
+        indicator.textContent = '🟢';
+        indicator.classList.add('connected');
+        const lastSync = syncConfig.lastSync ? new Date(syncConfig.lastSync).toLocaleTimeString() : 'Never';
+        statusText.textContent = `Connected (${lastSync})`;
+    } else {
+        indicator.textContent = '⚪';
+        statusText.textContent = 'Not Connected';
+        indicator.classList.remove('connected');
+    }
+}
+
+async function syncToGist() {
+    if (!syncConfig.syncEnabled || !syncConfig.token || !syncConfig.gistId || syncConfig.syncing) {
+        return false;
+    }
+
+    syncConfig.syncing = true;
+    updateSyncStatus();
+
+    try {
+        const response = await fetch(`${GITHUB_API}/gists/${syncConfig.gistId}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${syncConfig.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                files: {
+                    'research-lab-data.json': {
+                        content: JSON.stringify(storage, null, 2)
+                    }
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Sync failed: ${response.status} ${response.statusText}`);
+        }
+
+        syncConfig.lastSync = new Date().toISOString();
+        saveSyncConfig();
+        syncConfig.syncing = false;
+        updateSyncStatus();
+        return true;
+    } catch (error) {
+        console.error('Sync to gist failed:', error);
+        syncConfig.syncing = false;
+        updateSyncStatus();
+        return false;
+    }
+}
+
+async function syncFromGist() {
+    if (!syncConfig.syncEnabled || !syncConfig.token || !syncConfig.gistId || syncConfig.syncing) {
+        return false;
+    }
+
+    syncConfig.syncing = true;
+    updateSyncStatus();
+
+    try {
+        const response = await fetch(`${GITHUB_API}/gists/${syncConfig.gistId}`, {
+            headers: {
+                'Authorization': `token ${syncConfig.token}`,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Sync failed: ${response.status} ${response.statusText}`);
+        }
+
+        const gist = await response.json();
+        const fileContent = gist.files['research-lab-data.json'].content;
+        const data = JSON.parse(fileContent);
+
+        storage.students = data.students || [];
+        storage.goals = data.goals || [];
+        storage.activities = data.activities || [];
+        storage.publications = data.publications || [];
+
+        saveDataLocally();
+        updateUI();
+
+        syncConfig.lastSync = new Date().toISOString();
+        saveSyncConfig();
+        syncConfig.syncing = false;
+        updateSyncStatus();
+        return true;
+    } catch (error) {
+        console.error('Sync from gist failed:', error);
+        syncConfig.syncing = false;
+        updateSyncStatus();
+        return false;
+    }
+}
+
+function startAutoSync() {
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+    }
+    syncIntervalId = setInterval(() => {
+        syncFromGist();
+    }, SYNC_INTERVAL);
+}
+
+function stopAutoSync() {
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+        syncIntervalId = null;
+    }
+}
+
+// ===== DATA FUNCTIONS =====
+
 function loadData() {
     const saved = localStorage.getItem('researchLabData');
     if (saved) {
@@ -30,7 +190,6 @@ function loadData() {
         storage.publications = data.publications || [];
     }
     
-    // Add default PI if no students exist
     if (storage.students.length === 0) {
         storage.students.push({
             id: generateId(),
@@ -43,22 +202,43 @@ function loadData() {
     }
 }
 
-// Save data to localStorage
-function saveData() {
+function saveDataLocally() {
     localStorage.setItem('researchLabData', JSON.stringify(storage));
 }
 
-// Generate unique ID
+async function saveData() {
+    saveDataLocally();
+    if (syncConfig.syncEnabled) {
+        await syncToGist();
+    }
+}
+
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Initialize Event Listeners
+// ===== EVENT LISTENERS =====
+
 function initializeEventListeners() {
-    // Tab switching
+    // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
+
+    // Sync
+    document.getElementById('setupSyncBtn').addEventListener('click', () => {
+        document.getElementById('syncModal').style.display = 'flex';
+        if (syncConfig.token) document.getElementById('githubToken').value = syncConfig.token;
+        if (syncConfig.gistId) document.getElementById('gistId').value = syncConfig.gistId;
+    });
+    
+    document.getElementById('closeSyncModal').addEventListener('click', () => {
+        document.getElementById('syncModal').style.display = 'none';
+    });
+    
+    document.getElementById('syncSetupForm').addEventListener('submit', handleSyncSetup);
+    document.getElementById('disconnectBtn').addEventListener('click', disconnectSync);
+    document.getElementById('syncNowBtn').addEventListener('click', () => syncFromGist());
 
     // Export/Import
     document.getElementById('exportBtn').addEventListener('click', exportData);
@@ -76,8 +256,6 @@ function initializeEventListeners() {
     document.getElementById('addGoalBtn').addEventListener('click', () => toggleForm('goalForm', true));
     document.getElementById('cancelGoalBtn').addEventListener('click', () => toggleForm('goalForm', false));
     document.getElementById('goalFormElement').addEventListener('submit', handleGoalSubmit);
-    
-    // Goal filters
     document.getElementById('filterGoalType').addEventListener('change', renderGoals);
     document.getElementById('filterGoalStudent').addEventListener('change', renderGoals);
     document.getElementById('filterGoalStatus').addEventListener('change', renderGoals);
@@ -86,8 +264,6 @@ function initializeEventListeners() {
     document.getElementById('addActivityBtn').addEventListener('click', () => toggleForm('activityForm', true));
     document.getElementById('cancelActivityBtn').addEventListener('click', () => toggleForm('activityForm', false));
     document.getElementById('activityFormElement').addEventListener('submit', handleActivitySubmit);
-    
-    // Activity filters
     document.getElementById('filterActivityStudent').addEventListener('change', renderActivities);
     document.getElementById('filterActivityDate').addEventListener('change', renderActivities);
 
@@ -95,24 +271,70 @@ function initializeEventListeners() {
     document.getElementById('addPublicationBtn').addEventListener('click', () => toggleForm('publicationForm', true));
     document.getElementById('cancelPublicationBtn').addEventListener('click', () => toggleForm('publicationForm', false));
     document.getElementById('publicationFormElement').addEventListener('submit', handlePublicationSubmit);
-    
-    // Publication filter
     document.getElementById('filterPublicationStatus').addEventListener('change', renderPublications);
+
+    // Close modal on outside click
+    document.getElementById('syncModal').addEventListener('click', (e) => {
+        if (e.target.id === 'syncModal') {
+            document.getElementById('syncModal').style.display = 'none';
+        }
+    });
 }
 
-// Switch Tab
+async function handleSyncSetup(e) {
+    e.preventDefault();
+    
+    const token = document.getElementById('githubToken').value.trim();
+    const gistId = document.getElementById('gistId').value.trim();
+
+    syncConfig.token = token;
+    syncConfig.gistId = gistId;
+    syncConfig.syncEnabled = true;
+    saveSyncConfig();
+
+    // Test connection and initial sync
+    const success = await syncToGist();
+    
+    if (success) {
+        alert('✅ Successfully connected! Data will now sync automatically.');
+        document.getElementById('syncModal').style.display = 'none';
+        startAutoSync();
+        updateSyncStatus();
+    } else {
+        alert('❌ Connection failed. Please check your token and gist ID.');
+        syncConfig.syncEnabled = false;
+        saveSyncConfig();
+        updateSyncStatus();
+    }
+}
+
+function disconnectSync() {
+    if (confirm('Disconnect from GitHub Gist? Your local data will be preserved.')) {
+        syncConfig.token = null;
+        syncConfig.gistId = null;
+        syncConfig.syncEnabled = false;
+        syncConfig.lastSync = null;
+        saveSyncConfig();
+        stopAutoSync();
+        updateSyncStatus();
+        document.getElementById('syncModal').style.display = 'none';
+        document.getElementById('githubToken').value = '';
+        document.getElementById('gistId').value = '';
+        alert('Disconnected from sync.');
+    }
+}
+
+// ===== UI FUNCTIONS =====
+
 function switchTab(tabName) {
-    // Update tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.toggle('active', content.id === tabName);
     });
 
-    // Update UI for current tab
     if (tabName === 'dashboard') updateDashboard();
     if (tabName === 'goals') renderGoals();
     if (tabName === 'activities') renderActivities();
@@ -120,13 +342,11 @@ function switchTab(tabName) {
     if (tabName === 'students') renderStudents();
 }
 
-// Toggle Form Display
 function toggleForm(formId, show) {
     const form = document.getElementById(formId);
     form.style.display = show ? 'block' : 'none';
     
     if (!show) {
-        // Reset form
         form.querySelector('form').reset();
     }
     
@@ -135,7 +355,6 @@ function toggleForm(formId, show) {
     }
 }
 
-// Update all UI elements
 function updateUI() {
     updateStudentDropdowns();
     updateDashboard();
@@ -145,7 +364,6 @@ function updateUI() {
     renderStudents();
 }
 
-// Update student dropdowns
 function updateStudentDropdowns() {
     const dropdowns = [
         'goalStudent',
@@ -158,7 +376,6 @@ function updateStudentDropdowns() {
         const select = document.getElementById(id);
         const currentValue = select.value;
         
-        // Clear and repopulate
         const isFilter = id.startsWith('filter');
         select.innerHTML = isFilter ? '<option value="all">All Students</option>' : '<option value="">Select Student</option>';
         
@@ -169,14 +386,13 @@ function updateStudentDropdowns() {
             select.appendChild(option);
         });
         
-        // Restore selection if still valid
         if (currentValue) select.value = currentValue;
     });
 }
 
-// Dashboard Functions
+// ===== DASHBOARD =====
+
 function updateDashboard() {
-    // Update stats
     const activeGoals = storage.goals.filter(g => !g.completed).length;
     const completedGoals = storage.goals.filter(g => g.completed).length;
     
@@ -191,7 +407,6 @@ function updateDashboard() {
     document.getElementById('activitiesCount').textContent = recentActivities;
     document.getElementById('publicationsCount').textContent = storage.publications.length;
 
-    // Current week goals
     const currentWeekGoals = storage.goals
         .filter(g => !g.completed && g.type === 'weekly')
         .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
@@ -213,14 +428,13 @@ function updateDashboard() {
                                 ${student ? student.name : 'Unknown'} • ${daysLeft} days left
                             </div>
                         </div>
-                        <button class="btn btn-success btn-sm" onclick="completeGoal('${goal.id}')">✓</button>
+                        <button class="btn btn-success" style="padding: 5px 10px; font-size: 0.85rem;" onclick="completeGoal('${goal.id}')">✓</button>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    // Recent activities
     const recentActivitiesList = storage.activities
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 5);
@@ -244,8 +458,9 @@ function updateDashboard() {
     }
 }
 
-// Student Functions
-function handleStudentSubmit(e) {
+// ===== STUDENTS =====
+
+async function handleStudentSubmit(e) {
     e.preventDefault();
     
     const student = {
@@ -257,7 +472,7 @@ function handleStudentSubmit(e) {
     };
 
     storage.students.push(student);
-    saveData();
+    await saveData();
     updateUI();
     toggleForm('studentForm', false);
 }
@@ -296,16 +511,17 @@ function renderStudents() {
     }).join('');
 }
 
-function deleteStudent(id) {
-    if (confirm('Are you sure you want to delete this student? This will NOT delete their goals and activities.')) {
+async function deleteStudent(id) {
+    if (confirm('Delete this student? Their goals and activities will remain.')) {
         storage.students = storage.students.filter(s => s.id !== id);
-        saveData();
+        await saveData();
         updateUI();
     }
 }
 
-// Goal Functions
-function handleGoalSubmit(e) {
+// ===== GOALS =====
+
+async function handleGoalSubmit(e) {
     e.preventDefault();
     
     const goal = {
@@ -320,7 +536,7 @@ function handleGoalSubmit(e) {
     };
 
     storage.goals.push(goal);
-    saveData();
+    await saveData();
     updateUI();
     toggleForm('goalForm', false);
 }
@@ -328,7 +544,6 @@ function handleGoalSubmit(e) {
 function renderGoals() {
     const container = document.getElementById('goalsList');
     
-    // Apply filters
     let filteredGoals = [...storage.goals];
     
     const typeFilter = document.getElementById('filterGoalType').value;
@@ -353,7 +568,6 @@ function renderGoals() {
         return;
     }
 
-    // Sort by deadline
     filteredGoals.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
     container.innerHTML = filteredGoals.map(goal => {
@@ -386,26 +600,27 @@ function renderGoals() {
     }).join('');
 }
 
-function completeGoal(id) {
+async function completeGoal(id) {
     const goal = storage.goals.find(g => g.id === id);
     if (goal) {
         goal.completed = true;
         goal.completedAt = new Date().toISOString();
-        saveData();
+        await saveData();
         updateUI();
     }
 }
 
-function deleteGoal(id) {
-    if (confirm('Are you sure you want to delete this goal?')) {
+async function deleteGoal(id) {
+    if (confirm('Delete this goal?')) {
         storage.goals = storage.goals.filter(g => g.id !== id);
-        saveData();
+        await saveData();
         updateUI();
     }
 }
 
-// Activity Functions
-function handleActivitySubmit(e) {
+// ===== ACTIVITIES =====
+
+async function handleActivitySubmit(e) {
     e.preventDefault();
     
     const activity = {
@@ -419,7 +634,7 @@ function handleActivitySubmit(e) {
     };
 
     storage.activities.push(activity);
-    saveData();
+    await saveData();
     updateUI();
     toggleForm('activityForm', false);
 }
@@ -427,7 +642,6 @@ function handleActivitySubmit(e) {
 function renderActivities() {
     const container = document.getElementById('activitiesList');
     
-    // Apply filters
     let filteredActivities = [...storage.activities];
     
     const studentFilter = document.getElementById('filterActivityStudent').value;
@@ -445,7 +659,6 @@ function renderActivities() {
         return;
     }
 
-    // Sort by date (newest first)
     filteredActivities.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     container.innerHTML = filteredActivities.map(activity => {
@@ -471,16 +684,17 @@ function renderActivities() {
     }).join('');
 }
 
-function deleteActivity(id) {
-    if (confirm('Are you sure you want to delete this activity?')) {
+async function deleteActivity(id) {
+    if (confirm('Delete this activity?')) {
         storage.activities = storage.activities.filter(a => a.id !== id);
-        saveData();
+        await saveData();
         updateUI();
     }
 }
 
-// Publication Functions
-function handlePublicationSubmit(e) {
+// ===== PUBLICATIONS =====
+
+async function handlePublicationSubmit(e) {
     e.preventDefault();
     
     const publication = {
@@ -496,7 +710,7 @@ function handlePublicationSubmit(e) {
     };
 
     storage.publications.push(publication);
-    saveData();
+    await saveData();
     updateUI();
     toggleForm('publicationForm', false);
 }
@@ -504,7 +718,6 @@ function handlePublicationSubmit(e) {
 function renderPublications() {
     const container = document.getElementById('publicationsList');
     
-    // Apply filter
     let filteredPublications = [...storage.publications];
     
     const statusFilter = document.getElementById('filterPublicationStatus').value;
@@ -517,7 +730,6 @@ function renderPublications() {
         return;
     }
 
-    // Sort by year (newest first)
     filteredPublications.sort((a, b) => (b.year || 0) - (a.year || 0));
 
     container.innerHTML = filteredPublications.map(pub => {
@@ -553,15 +765,16 @@ function renderPublications() {
     }).join('');
 }
 
-function deletePublication(id) {
-    if (confirm('Are you sure you want to delete this publication?')) {
+async function deletePublication(id) {
+    if (confirm('Delete this publication?')) {
         storage.publications = storage.publications.filter(p => p.id !== id);
-        saveData();
+        await saveData();
         updateUI();
     }
 }
 
-// Export/Import Functions
+// ===== EXPORT/IMPORT =====
+
 function exportData() {
     const dataStr = JSON.stringify(storage, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -573,31 +786,30 @@ function exportData() {
     URL.revokeObjectURL(url);
 }
 
-function importData(e) {
+async function importData(e) {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = async function(event) {
         try {
             const data = JSON.parse(event.target.result);
             
-            if (confirm('This will replace all current data. Are you sure?')) {
+            if (confirm('This will replace all current data. Continue?')) {
                 storage.students = data.students || [];
                 storage.goals = data.goals || [];
                 storage.activities = data.activities || [];
                 storage.publications = data.publications || [];
-                saveData();
+                await saveData();
                 updateUI();
                 alert('Data imported successfully!');
             }
         } catch (error) {
-            alert('Error importing data. Please check the file format.');
+            alert('Error importing data. Check file format.');
             console.error('Import error:', error);
         }
     };
     reader.readAsText(file);
     
-    // Reset file input
     e.target.value = '';
 }
