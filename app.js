@@ -2,7 +2,7 @@
 // Version 2.0
 
 // Configuration
-const SYNC_INTERVAL = 30000; // 30 seconds
+const SYNC_INTERVAL = 5000; // 5 seconds - Much faster!
 const GITHUB_API = 'https://api.github.com';
 
 // Data Storage
