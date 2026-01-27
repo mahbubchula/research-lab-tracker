@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Lab Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-content">
+                <h1>🔬 Research Lab Tracker</h1>
+                <p class="subtitle">Collaborative Goal & Activity Tracking</p>
+            </div>
+            <div class="header-actions">
+                <button id="exportBtn" class="btn btn-secondary">📤 Export Data</button>
+                <button id="importBtn" class="btn btn-secondary">📥 Import Data</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="goals">Goals</button>
+            <button class="tab-btn" data-tab="activities">Activities</button>
+            <button class="tab-btn" data-tab="publications">Publications</button>
+            <button class="tab-btn" data-tab="students">Students</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <h2>Lab Overview</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="activeGoalsCount">0</div>
+                    <div class="stat-label">Active Goals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedGoalsCount">0</div>
+                    <div class="stat-label">Completed Goals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="activitiesCount">0</div>
+                    <div class="stat-label">Activities This Week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="publicationsCount">0</div>
+                    <div class="stat-label">Publications</div>
+                </div>
+            </div>
+
+            <div class="dashboard-sections">
+                <section class="dashboard-section">
+                    <h3>Current Week Goals</h3>
+                    <div id="currentWeekGoals" class="goals-list"></div>
+                </section>
+
+                <section class="dashboard-section">
+                    <h3>Recent Activities</h3>
+                    <div id="recentActivities" class="activities-list"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Goals Tab -->
+        <div id="goals" class="tab-content">
+            <div class="section-header">
+                <h2>Research Goals</h2>
+                <button id="addGoalBtn" class="btn btn-primary">+ Add New Goal</button>
+            </div>
+
+            <!-- Goal Form (Hidden by default) -->
+            <div id="goalForm" class="form-container" style="display: none;">
+                <h3>Create New Goal</h3>
+                <form id="goalFormElement">
+                    <div class="form-group">
+                        <label for="goalTitle">Goal Title *</label>
+                        <input type="text" id="goalTitle" required placeholder="e.g., Complete literature review">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="goalType">Type *</label>
+                            <select id="goalType" required>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goalStudent">Assigned To *</label>
+                            <select id="goalStudent" required>
+                                <option value="">Select Student</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goalDeadline">Deadline *</label>
+                            <input type="date" id="goalDeadline" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="goalDescription">Description</label>
+                        <textarea id="goalDescription" rows="3" placeholder="Detailed description of the goal..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Goal</button>
+                        <button type="button" id="cancelGoalBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Goals Filter -->
+            <div class="filter-bar">
+                <select id="filterGoalType" class="filter-select">
+                    <option value="all">All Types</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+
+                <select id="filterGoalStudent" class="filter-select">
+                    <option value="all">All Students</option>
+                </select>
+
+                <select id="filterGoalStatus" class="filter-select">
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+
+            <!-- Goals List -->
+            <div id="goalsList" class="items-list"></div>
+        </div>
+
+        <!-- Activities Tab -->
+        <div id="activities" class="tab-content">
+            <div class="section-header">
+                <h2>Research Activities</h2>
+                <button id="addActivityBtn" class="btn btn-primary">+ Log Activity</button>
+            </div>
+
+            <!-- Activity Form -->
+            <div id="activityForm" class="form-container" style="display: none;">
+                <h3>Log New Activity</h3>
+                <form id="activityFormElement">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="activityStudent">Student *</label>
+                            <select id="activityStudent" required>
+                                <option value="">Select Student</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="activityDate">Date *</label>
+                            <input type="date" id="activityDate" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityTitle">Activity Title *</label>
+                        <input type="text" id="activityTitle" required placeholder="e.g., Conducted experiment #5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityDescription">Details *</label>
+                        <textarea id="activityDescription" rows="4" required placeholder="Describe what was done, results, next steps..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityHours">Hours Spent</label>
+                        <input type="number" id="activityHours" min="0" step="0.5" placeholder="e.g., 3.5">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Activity</button>
+                        <button type="button" id="cancelActivityBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Activities Filter -->
+            <div class="filter-bar">
+                <select id="filterActivityStudent" class="filter-select">
+                    <option value="all">All Students</option>
+                </select>
+
+                <input type="date" id="filterActivityDate" class="filter-select">
+            </div>
+
+            <!-- Activities List -->
+            <div id="activitiesList" class="items-list"></div>
+        </div>
+
+        <!-- Publications Tab -->
+        <div id="publications" class="tab-content">
+            <div class="section-header">
+                <h2>Publications</h2>
+                <button id="addPublicationBtn" class="btn btn-primary">+ Add Publication</button>
+            </div>
+
+            <!-- Publication Form -->
+            <div id="publicationForm" class="form-container" style="display: none;">
+                <h3>Add Publication</h3>
+                <form id="publicationFormElement">
+                    <div class="form-group">
+                        <label for="publicationTitle">Paper Title *</label>
+                        <input type="text" id="publicationTitle" required placeholder="Full title of the paper">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publicationAuthors">Authors *</label>
+                        <input type="text" id="publicationAuthors" required placeholder="Author1, Author2, Author3...">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="publicationStatus">Status *</label>
+                            <select id="publicationStatus" required>
+                                <option value="draft">Draft</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="submitted">Submitted</option>
+                                <option value="under-review">Under Review</option>
+                                <option value="accepted">Accepted</option>
+                                <option value="published">Published</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="publicationYear">Year</label>
+                            <input type="number" id="publicationYear" min="2000" max="2050" placeholder="2026">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publicationVenue">Journal/Conference</label>
+                        <input type="text" id="publicationVenue" placeholder="Name of journal or conference">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publicationDOI">DOI/URL</label>
+                        <input type="text" id="publicationDOI" placeholder="https://doi.org/... or paper URL">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publicationNotes">Notes</label>
+                        <textarea id="publicationNotes" rows="3" placeholder="Additional notes, deadlines, review comments..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Publication</button>
+                        <button type="button" id="cancelPublicationBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Publications Filter -->
+            <div class="filter-bar">
+                <select id="filterPublicationStatus" class="filter-select">
+                    <option value="all">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="under-review">Under Review</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="published">Published</option>
+                </select>
+            </div>
+
+            <!-- Publications List -->
+            <div id="publicationsList" class="items-list"></div>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="students" class="tab-content">
+            <div class="section-header">
+                <h2>Lab Members</h2>
+                <button id="addStudentBtn" class="btn btn-primary">+ Add Student</button>
+            </div>
+
+            <!-- Student Form -->
+            <div id="studentForm" class="form-container" style="display: none;">
+                <h3>Add Lab Member</h3>
+                <form id="studentFormElement">
+                    <div class="form-group">
+                        <label for="studentName">Name *</label>
+                        <input type="text" id="studentName" required placeholder="Student full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="studentEmail">Email</label>
+                        <input type="email" id="studentEmail" placeholder="student@university.edu">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="studentRole">Role</label>
+                        <select id="studentRole">
+                            <option value="phd">PhD Student</option>
+                            <option value="masters">Master's Student</option>
+                            <option value="undergraduate">Undergraduate</option>
+                            <option value="postdoc">Postdoc</option>
+                            <option value="pi">Principal Investigator</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Student</button>
+                        <button type="button" id="cancelStudentBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Students List -->
+            <div id="studentsList" class="items-list"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
