@@ -380,7 +380,14 @@ async function handleSyncSetup(e) {
     syncConfig.syncEnabled = true;
     saveSyncConfig();
 
-    const success = await syncToGist();
+    let success = await syncFromGist();
+
+    if (!success) {
+        const shouldPush = confirm('Could not load existing data from GitHub. Push your current local data to initialize the shared database? This will overwrite data in the gist.');
+        if (shouldPush) {
+            success = await syncToGist();
+        }
+    }
     
     if (success) {
         alert('✅ Successfully connected! Data will now sync automatically.');
