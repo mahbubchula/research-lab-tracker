@@ -366,6 +366,18 @@ header {
     color: var(--gray-800);
 }
 
+.section-subtitle {
+    color: var(--gray-600);
+    font-size: 0.95rem;
+}
+
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 /* Forms */
 .form-container {
     background: var(--gray-50);
@@ -533,6 +545,9 @@ header {
 .badge-under-review { background: #fed7aa; color: #9a3412; }
 .badge-accepted { background: #d1fae5; color: #065f46; }
 .badge-published { background: #a7f3d0; color: #064e3b; }
+.badge-high { background: #fee2e2; color: #b91c1c; }
+.badge-medium { background: #fef3c7; color: #92400e; }
+.badge-low { background: #d1fae5; color: #047857; }
 
 /* Student Card */
 .student-card {
@@ -585,6 +600,58 @@ header {
     color: var(--gray-500);
     font-size: 0.85rem;
     margin-top: 3px;
+}
+
+/* PI Workspace */
+.pi-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat-card .stat-label {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    margin-bottom: 8px;
+}
+
+.pi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+}
+
+.pi-section {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.pi-section-header h3 {
+    margin-bottom: 5px;
+    color: var(--gray-800);
+}
+
+.pi-section-header p {
+    color: var(--gray-600);
+    font-size: 0.9rem;
+}
+
+.pi-form {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: 15px;
+}
+
+.item-card.item-completed {
+    background: var(--gray-50);
+    opacity: 0.85;
 }
 
 /* Empty State */

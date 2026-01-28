@@ -1,18 +1,19 @@
-# Research Lab Tracker 🔬
+﻿# Research Lab Tracker ðŸ”¬
 
 A comprehensive web-based tool for tracking research goals, activities, and publications for academic labs. Perfect for principal investigators and their students to collaborate and monitor progress with **real-time data synchronization**.
 
 ## Features
 
-✅ **Real-time Collaboration** - All lab members see the same data
-✅ **Automatic Sync** - Data syncs via GitHub Gists
-✅ **Weekly & Monthly Goals** - Set and track time-bound research objectives
-✅ **Activity Logging** - Record daily research activities and progress
-✅ **Publication Tracker** - Manage papers from draft to publication
-✅ **Student Dashboard** - Individual views for each lab member
-✅ **Progress Visualization** - Charts and progress indicators
-✅ **Data Export/Import** - Backup and restore your data
-✅ **No Backend Required** - Uses GitHub Gists as database
+âœ… **Real-time Collaboration** - All lab members see the same data
+âœ… **Automatic Sync** - Data syncs via GitHub Gists
+âœ… **Weekly & Monthly Goals** - Set and track time-bound research objectives
+âœ… **Activity Logging** - Record daily research activities and progress
+âœ… **Publication Tracker** - Manage papers from draft to publication
+âœ… **Student Dashboard** - Individual views for each lab member
+âœ… **Progress Visualization** - Charts and progress indicators
+âœ… **Data Export/Import** - Backup and restore your data
+âœ… **No Backend Required** - Uses GitHub Gists as database
+- **PI Workspace** - Private goals, notes, and to-dos stored only on your device
 
 ## Quick Setup (5 minutes)
 
@@ -26,7 +27,7 @@ A comprehensive web-based tool for tracking research goals, activities, and publ
 
 ### Step 2: Enable GitHub Pages
 
-1. Go to repository **Settings** → **Pages**
+1. Go to repository **Settings** â†’ **Pages**
 2. Source: "Deploy from a branch"
 3. Branch: `main`, folder: `/ (root)`
 4. Click **Save**
@@ -38,10 +39,10 @@ A comprehensive web-based tool for tracking research goals, activities, and publ
 #### A. Create GitHub Personal Access Token
 
 1. Go to https://github.com/settings/tokens
-2. Click **"Generate new token"** → **"Generate new token (classic)"**
+2. Click **"Generate new token"** â†’ **"Generate new token (classic)"**
 3. Note: `Research Lab Tracker`
 4. Expiration: `No expiration` or `1 year`
-5. Select scopes: ✅ **`gist`** (only this one needed)
+5. Select scopes: âœ… **`gist`** (only this one needed)
 6. Click **"Generate token"**
 7. **COPY THE TOKEN** - you'll only see it once! (starts with `ghp_...`)
 
@@ -66,12 +67,12 @@ A comprehensive web-based tool for tracking research goals, activities, and publ
 #### C. Configure the App
 
 1. Open your deployed site: `https://yourusername.github.io/research-lab-tracker`
-2. Click **"⚙️ Setup Sync"** button (top right)
+2. Click **"âš™ï¸ Setup Sync"** button (top right)
 3. Enter:
    - **GitHub Token**: Paste your token (`ghp_...`)
    - **Gist ID**: Paste your gist ID
 4. Click **"Save & Connect"**
-5. ✅ You should see "✓ Connected" status
+5. âœ… You should see "âœ“ Connected" status
 
 ### Step 4: Share with Students
 
@@ -82,16 +83,16 @@ Send your students:
 
 **Each student needs to:**
 1. Visit the app URL
-2. Click "⚙️ Setup Sync"
+2. Click "âš™ï¸ Setup Sync"
 3. Enter the same token and gist ID
-4. Now everyone sees the same data! 🎉
+4. Now everyone sees the same data! ðŸŽ‰
 
 ## Usage Guide
 
 ### First Time Setup (Lab PI)
 
 1. **Set up sync** (follow Step 3 above)
-2. **Add lab members**: Go to "Students" tab → Add each student
+2. **Add lab members**: Go to "Students" tab â†’ Add each student
 3. **Set initial goals**: Create first weekly/monthly goals
 4. **Share access**: Give students the URL, token, and gist ID
 
@@ -110,36 +111,44 @@ Send your students:
 4. **Friday**: Review completion status together
 5. **Monthly**: Set monthly objectives and review achievements
 
+### PI Workspace (Private Only)
+
+- Open the **PI Workspace** tab for a personal dashboard that only lives in your browser.
+- Track private academic goals, work log entries, and personal to-do items without sharing them via GitHub.
+- Use the Export/Import buttons in that tab to create JSON backups you can store safely elsewhere.
+- Clearing browser data or switching computers will remove this private workspace unless you import a backup file.
+
+
 ## Features Guide
 
-### 📊 Dashboard
+### ðŸ“Š Dashboard
 - Overview of all active goals
 - Recent activities from all lab members
 - Publication statistics
 - Quick completion actions
 
-### 🎯 Goals
+### ðŸŽ¯ Goals
 - Create weekly or monthly goals
 - Assign to specific students
 - Set deadlines and track progress
 - Mark as completed
 - Filter by type, student, or status
 
-### 📝 Activities
+### ðŸ“ Activities
 - Log daily research work
 - Record hours spent
 - Add detailed descriptions
 - Filter by student or date
 - View timeline of all activities
 
-### 📚 Publications
+### ðŸ“š Publications
 - Track papers through pipeline
-- Statuses: Draft → In Progress → Submitted → Under Review → Accepted → Published
+- Statuses: Draft â†’ In Progress â†’ Submitted â†’ Under Review â†’ Accepted â†’ Published
 - Store DOI/URLs
 - Add notes and deadlines
 - Filter by status
 
-### 👥 Students
+### ðŸ‘¥ Students
 - Manage lab members
 - Different roles: PhD, Master's, Undergraduate, Postdoc, PI
 - Contact information
@@ -151,12 +160,12 @@ Send your students:
 - Data stored in a private GitHub Gist
 - App reads/writes to Gist via GitHub API
 - Changes sync every 30 seconds automatically
-- Manual sync with "🔄 Sync Now" button
+- Manual sync with "ðŸ”„ Sync Now" button
 
 ### Sync Status Indicators
-- **🟢 Connected**: Sync working properly
-- **🟡 Syncing**: Data being synchronized
-- **🔴 Disconnected**: Check credentials or internet
+- **ðŸŸ¢ Connected**: Sync working properly
+- **ðŸŸ¡ Syncing**: Data being synchronized
+- **ðŸ”´ Disconnected**: Check credentials or internet
 - **Last sync**: Shows time of last successful sync
 
 ### Troubleshooting Sync
@@ -169,7 +178,7 @@ Send your students:
 
 **Data not appearing:**
 - Wait 30 seconds for auto-sync
-- Click "🔄 Sync Now" button
+- Click "ðŸ”„ Sync Now" button
 - Check all users have same gist ID
 - Verify gist contains valid JSON
 
@@ -181,7 +190,7 @@ Send your students:
 ## Security & Privacy
 
 ### Token Safety
-- ⚠️ **Never share tokens publicly** (only with your lab members)
+- âš ï¸ **Never share tokens publicly** (only with your lab members)
 - Store token securely
 - Can revoke and regenerate anytime at https://github.com/settings/tokens
 - Each lab should have unique token
@@ -201,7 +210,7 @@ Send your students:
 ## Backup & Export
 
 ### Manual Backup
-1. Click **"📤 Export Data"**
+1. Click **"ðŸ“¤ Export Data"**
 2. Saves JSON file with all data
 3. Store in safe location
 4. Can import anytime
@@ -212,7 +221,7 @@ Send your students:
 - Gist has version history
 
 ### Restore from Backup
-1. Click **"📥 Import Data"**
+1. Click **"ðŸ“¥ Import Data"**
 2. Select JSON backup file
 3. Confirm replacement
 4. Data syncs to all devices
@@ -231,7 +240,7 @@ Edit `styles.css`:
 ### Change Lab Name
 Edit `index.html`:
 ```html
-<h1>🔬 Your Lab Name Here</h1>
+<h1>ðŸ”¬ Your Lab Name Here</h1>
 ```
 
 ### Adjust Sync Interval
@@ -259,10 +268,10 @@ const SYNC_INTERVAL = 30000; // milliseconds (30 seconds default)
 
 ## Browser Compatibility
 
-- ✅ Chrome/Edge (recommended)
-- ✅ Firefox  
-- ✅ Safari
-- ✅ Mobile browsers
+- âœ… Chrome/Edge (recommended)
+- âœ… Firefox  
+- âœ… Safari
+- âœ… Mobile browsers
 - Requires JavaScript enabled
 - Needs localStorage support
 
@@ -272,7 +281,7 @@ const SYNC_INTERVAL = 30000; // milliseconds (30 seconds default)
 | Problem | Solution |
 |---------|----------|
 | Not syncing | Check token & gist ID in settings |
-| Old data showing | Click "🔄 Sync Now" or refresh page |
+| Old data showing | Click "ðŸ”„ Sync Now" or refresh page |
 | Sync failed | Verify token hasn't expired |
 | Slow sync | Check internet connection |
 
@@ -325,9 +334,9 @@ MIT License - Free to use and modify
 
 ## Credits
 
-Built for research labs worldwide 🌍  
-Helping scientists track goals and stay productive 🔬
+Built for research labs worldwide ðŸŒ  
+Helping scientists track goals and stay productive ðŸ”¬
 
 ---
 
-**Version 2.0** - Now with real-time collaboration! 🎉
+**Version 2.0** - Now with real-time collaboration! ðŸŽ‰

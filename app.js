@@ -13,6 +13,13 @@ const storage = {
     publications: []
 };
 
+// PI-only workspace (local only, never synced)
+const privateStorage = {
+    piGoals: [],
+    piActivities: [],
+    piTodos: []
+};
+
 // Sync Configuration
 let syncConfig = {
     token: null,
@@ -24,11 +31,17 @@ let syncConfig = {
 
 let syncIntervalId = null;
 let editingItem = null; // Track which item is being edited
+const privateEditing = {
+    goal: null,
+    activity: null,
+    todo: null
+};
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
     loadSyncConfig();
     loadData();
+    loadPrivateData();
     initializeEventListeners();
     updateUI();
     
@@ -36,6 +49,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('activityDate').value = today;
     document.getElementById('goalDeadline').valueAsDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const piActivityDate = document.getElementById('piActivityDate');
+    if (piActivityDate) piActivityDate.value = today;
+    const piTodoDueDate = document.getElementById('piTodoDueDate');
+    if (piTodoDueDate) piTodoDueDate.value = '';
 
     // Start sync if configured
     if (syncConfig.syncEnabled) {
@@ -203,8 +220,24 @@ function loadData() {
     }
 }
 
+function loadPrivateData() {
+    const saved = localStorage.getItem('researchLabPrivateData');
+    if (saved) {
+        const data = JSON.parse(saved);
+        privateStorage.piGoals = data.piGoals || [];
+        privateStorage.piActivities = data.piActivities || [];
+        privateStorage.piTodos = data.piTodos || [];
+    } else {
+        savePrivateData();
+    }
+}
+
 function saveDataLocally() {
     localStorage.setItem('researchLabData', JSON.stringify(storage));
+}
+
+function savePrivateData() {
+    localStorage.setItem('researchLabPrivateData', JSON.stringify(privateStorage));
 }
 
 async function saveData() {
@@ -298,6 +331,36 @@ function initializeEventListeners() {
     document.getElementById('publicationFormElement').addEventListener('submit', handlePublicationSubmit);
     document.getElementById('filterPublicationStatus').addEventListener('change', renderPublications);
 
+    // PI Workspace
+    const piGoalForm = document.getElementById('piGoalFormElement');
+    if (piGoalForm) {
+        piGoalForm.addEventListener('submit', handlePiGoalSubmit);
+        document.getElementById('piGoalResetBtn').addEventListener('click', resetPiGoalForm);
+    }
+
+    const piActivityForm = document.getElementById('piActivityFormElement');
+    if (piActivityForm) {
+        piActivityForm.addEventListener('submit', handlePiActivitySubmit);
+        document.getElementById('piActivityResetBtn').addEventListener('click', resetPiActivityForm);
+    }
+
+    const piTodoForm = document.getElementById('piTodoFormElement');
+    if (piTodoForm) {
+        piTodoForm.addEventListener('submit', handlePiTodoSubmit);
+        document.getElementById('piTodoResetBtn').addEventListener('click', resetPiTodoForm);
+    }
+
+    const piImportBtn = document.getElementById('piImportBtn');
+    const piImportFile = document.getElementById('piImportFile');
+    if (piImportBtn && piImportFile) {
+        piImportBtn.addEventListener('click', () => piImportFile.click());
+        piImportFile.addEventListener('change', importPrivateData);
+    }
+    const piExportBtn = document.getElementById('piExportBtn');
+    if (piExportBtn) {
+        piExportBtn.addEventListener('click', exportPrivateData);
+    }
+
     // Close modal on outside click
     document.getElementById('syncModal').addEventListener('click', (e) => {
         if (e.target.id === 'syncModal') {
@@ -364,6 +427,7 @@ function switchTab(tabName) {
     if (tabName === 'activities') renderActivities();
     if (tabName === 'publications') renderPublications();
     if (tabName === 'students') renderStudents();
+    if (tabName === 'pi-workspace') renderPiWorkspace();
 }
 
 function toggleForm(formId, show) {
@@ -387,6 +451,7 @@ function updateUI() {
     renderActivities();
     renderPublications();
     renderStudents();
+    renderPiWorkspace();
 }
 
 function updateStudentDropdowns() {
@@ -960,5 +1025,399 @@ async function importData(e) {
     };
     reader.readAsText(file);
     
+    e.target.value = '';
+}
+
+// ===== PI WORKSPACE =====
+
+function renderPiWorkspace() {
+    updatePiStats();
+    renderPiGoals();
+    renderPiActivities();
+    renderPiTodos();
+}
+
+function updatePiStats() {
+    const activeGoalsEl = document.getElementById('piActiveGoals');
+    if (!activeGoalsEl) return;
+    
+    const activityEl = document.getElementById('piActivityCount');
+    const todoEl = document.getElementById('piTodoCount');
+    const activeGoals = privateStorage.piGoals.filter(goal => !goal.completed).length;
+    const openTodos = privateStorage.piTodos.filter(todo => !todo.completed).length;
+    
+    activeGoalsEl.textContent = activeGoals;
+    if (activityEl) activityEl.textContent = privateStorage.piActivities.length;
+    if (todoEl) todoEl.textContent = openTodos;
+}
+
+// -- Goals --
+
+function handlePiGoalSubmit(e) {
+    e.preventDefault();
+    
+    const title = document.getElementById('piGoalTitle').value.trim();
+    if (!title) return;
+    
+    const goalData = {
+        title,
+        focus: document.getElementById('piGoalFocus').value,
+        deadline: document.getElementById('piGoalDeadline').value || null,
+        description: document.getElementById('piGoalDescription').value.trim(),
+        updatedAt: new Date().toISOString()
+    };
+
+    if (privateEditing.goal) {
+        const goal = privateStorage.piGoals.find(g => g.id === privateEditing.goal);
+        if (goal) {
+            Object.assign(goal, goalData);
+        }
+    } else {
+        privateStorage.piGoals.push({
+            id: generateId(),
+            completed: false,
+            createdAt: new Date().toISOString(),
+            ...goalData
+        });
+    }
+
+    savePrivateData();
+    renderPiWorkspace();
+    resetPiGoalForm();
+}
+
+function resetPiGoalForm() {
+    const form = document.getElementById('piGoalFormElement');
+    if (!form) return;
+    form.reset();
+    privateEditing.goal = null;
+    document.getElementById('piGoalSubmitBtn').textContent = 'Save Goal';
+}
+
+function editPiGoal(id) {
+    const goal = privateStorage.piGoals.find(g => g.id === id);
+    if (!goal) return;
+    privateEditing.goal = id;
+    document.getElementById('piGoalTitle').value = goal.title;
+    document.getElementById('piGoalFocus').value = goal.focus || 'other';
+    document.getElementById('piGoalDeadline').value = goal.deadline || '';
+    document.getElementById('piGoalDescription').value = goal.description || '';
+    document.getElementById('piGoalSubmitBtn').textContent = 'Update Goal';
+}
+
+function completePiGoal(id) {
+    const goal = privateStorage.piGoals.find(g => g.id === id);
+    if (!goal) return;
+    goal.completed = !goal.completed;
+    goal.updatedAt = new Date().toISOString();
+    savePrivateData();
+    renderPiWorkspace();
+}
+
+function deletePiGoal(id) {
+    if (!confirm('Remove this private goal?')) return;
+    privateStorage.piGoals = privateStorage.piGoals.filter(g => g.id !== id);
+    savePrivateData();
+    renderPiWorkspace();
+}
+
+function renderPiGoals() {
+    const container = document.getElementById('piGoalsList');
+    if (!container) return;
+
+    if (privateStorage.piGoals.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-text">No private goals yet</div></div>';
+        return;
+    }
+
+    const focusLabels = {
+        strategy: 'Strategy',
+        publishing: 'Publishing',
+        funding: 'Funding',
+        team: 'Team Support',
+        personal: 'Personal Development',
+        other: 'Other'
+    };
+
+    const sorted = [...privateStorage.piGoals].sort((a, b) => {
+        if (a.completed === b.completed) {
+            return new Date(a.deadline || '9999-12-31') - new Date(b.deadline || '9999-12-31');
+        }
+        return a.completed ? 1 : -1;
+    });
+
+    container.innerHTML = sorted.map(goal => {
+        const dueDate = goal.deadline ? new Date(goal.deadline).toLocaleDateString() : 'No deadline';
+        const daysLeft = goal.deadline ? Math.ceil((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+        const focus = focusLabels[goal.focus] || 'Other';
+        const statusClass = goal.completed ? 'badge-completed' : 'badge-active';
+        const statusLabel = goal.completed ? 'Completed' : 'Active';
+        const dueText = goal.completed ? `Completed on ${new Date(goal.updatedAt).toLocaleDateString()}` : dueDate;
+
+        return `
+            <div class="item-card">
+                <div class="item-header">
+                    <div class="item-title">${goal.title}</div>
+                    <div class="item-actions">
+                        <button class="btn btn-secondary" onclick="editPiGoal('${goal.id}')">Edit</button>
+                        <button class="btn btn-danger" onclick="deletePiGoal('${goal.id}')">Delete</button>
+                    </div>
+                </div>
+                <div class="item-meta">
+                    <span>${focus}</span>
+                    <span>${dueText}</span>
+                    ${(!goal.completed && daysLeft !== null) ? `<span>${daysLeft >= 0 ? `${daysLeft} days left` : `${Math.abs(daysLeft)} days overdue`}</span>` : ''}
+                </div>
+                ${goal.description ? `<div class="item-description">${goal.description}</div>` : ''}
+                <div class="item-footer">
+                    <span class="badge ${statusClass}">${statusLabel}</span>
+                    <button class="btn btn-success" onclick="completePiGoal('${goal.id}')">${goal.completed ? 'Reopen' : 'Mark Complete'}</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// -- Work Log --
+
+function handlePiActivitySubmit(e) {
+    e.preventDefault();
+    
+    const title = document.getElementById('piActivityTitle').value.trim();
+    if (!title) return;
+
+    const entryData = {
+        title,
+        date: document.getElementById('piActivityDate').value || new Date().toISOString().split('T')[0],
+        mood: document.getElementById('piActivityMood').value,
+        notes: document.getElementById('piActivityNotes').value.trim(),
+        updatedAt: new Date().toISOString()
+    };
+
+    if (privateEditing.activity) {
+        const entry = privateStorage.piActivities.find(a => a.id === privateEditing.activity);
+        if (entry) {
+            Object.assign(entry, entryData);
+        }
+    } else {
+        privateStorage.piActivities.push({
+            id: generateId(),
+            createdAt: new Date().toISOString(),
+            ...entryData
+        });
+    }
+
+    savePrivateData();
+    renderPiWorkspace();
+    resetPiActivityForm();
+}
+
+function resetPiActivityForm() {
+    const form = document.getElementById('piActivityFormElement');
+    if (!form) return;
+    form.reset();
+    privateEditing.activity = null;
+    document.getElementById('piActivitySubmitBtn').textContent = 'Log Entry';
+    const piActivityDate = document.getElementById('piActivityDate');
+    if (piActivityDate) piActivityDate.value = new Date().toISOString().split('T')[0];
+}
+
+function editPiActivity(id) {
+    const entry = privateStorage.piActivities.find(a => a.id === id);
+    if (!entry) return;
+    privateEditing.activity = id;
+    document.getElementById('piActivityTitle').value = entry.title;
+    document.getElementById('piActivityDate').value = entry.date;
+    document.getElementById('piActivityMood').value = entry.mood || 'focused';
+    document.getElementById('piActivityNotes').value = entry.notes || '';
+    document.getElementById('piActivitySubmitBtn').textContent = 'Update Entry';
+}
+
+function deletePiActivity(id) {
+    if (!confirm('Delete this private work log entry?')) return;
+    privateStorage.piActivities = privateStorage.piActivities.filter(a => a.id !== id);
+    savePrivateData();
+    renderPiWorkspace();
+}
+
+function renderPiActivities() {
+    const container = document.getElementById('piActivitiesList');
+    if (!container) return;
+
+    if (privateStorage.piActivities.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-text">No private work logs yet</div></div>';
+        return;
+    }
+
+    const moodLabels = {
+        focused: 'Focused',
+        creative: 'Creative',
+        collaborative: 'Collaborative',
+        reflective: 'Reflective',
+        tired: 'Tired'
+    };
+
+    const sorted = [...privateStorage.piActivities].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    container.innerHTML = sorted.map(entry => `
+        <div class="item-card">
+            <div class="item-header">
+                <div class="item-title">${entry.title}</div>
+                <div class="item-actions">
+                    <button class="btn btn-secondary" onclick="editPiActivity('${entry.id}')">Edit</button>
+                    <button class="btn btn-danger" onclick="deletePiActivity('${entry.id}')">Delete</button>
+                </div>
+            </div>
+            <div class="item-meta">
+                <span>${new Date(entry.date).toLocaleDateString()}</span>
+                <span>${moodLabels[entry.mood] || entry.mood}</span>
+            </div>
+            ${entry.notes ? `<div class="item-description">${entry.notes}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+// -- To-Do --
+
+function handlePiTodoSubmit(e) {
+    e.preventDefault();
+    
+    const title = document.getElementById('piTodoTitle').value.trim();
+    if (!title) return;
+
+    const todoData = {
+        title,
+        priority: document.getElementById('piTodoPriority').value,
+        dueDate: document.getElementById('piTodoDueDate').value || null,
+        updatedAt: new Date().toISOString()
+    };
+
+    if (privateEditing.todo) {
+        const todo = privateStorage.piTodos.find(t => t.id === privateEditing.todo);
+        if (todo) {
+            Object.assign(todo, todoData);
+        }
+    } else {
+        privateStorage.piTodos.push({
+            id: generateId(),
+            completed: false,
+            createdAt: new Date().toISOString(),
+            ...todoData
+        });
+    }
+
+    savePrivateData();
+    renderPiWorkspace();
+    resetPiTodoForm();
+}
+
+function resetPiTodoForm() {
+    const form = document.getElementById('piTodoFormElement');
+    if (!form) return;
+    form.reset();
+    privateEditing.todo = null;
+    document.getElementById('piTodoSubmitBtn').textContent = 'Save Task';
+}
+
+function editPiTodo(id) {
+    const todo = privateStorage.piTodos.find(t => t.id === id);
+    if (!todo) return;
+    privateEditing.todo = id;
+    document.getElementById('piTodoTitle').value = todo.title;
+    document.getElementById('piTodoPriority').value = todo.priority || 'medium';
+    document.getElementById('piTodoDueDate').value = todo.dueDate || '';
+    document.getElementById('piTodoSubmitBtn').textContent = 'Update Task';
+}
+
+function togglePiTodo(id) {
+    const todo = privateStorage.piTodos.find(t => t.id === id);
+    if (!todo) return;
+    todo.completed = !todo.completed;
+    todo.updatedAt = new Date().toISOString();
+    savePrivateData();
+    renderPiWorkspace();
+}
+
+function deletePiTodo(id) {
+    if (!confirm('Delete this private task?')) return;
+    privateStorage.piTodos = privateStorage.piTodos.filter(t => t.id !== id);
+    savePrivateData();
+    renderPiWorkspace();
+}
+
+function renderPiTodos() {
+    const container = document.getElementById('piTodosList');
+    if (!container) return;
+
+    if (privateStorage.piTodos.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-text">No private tasks yet</div></div>';
+        return;
+    }
+
+    const priorityLabels = {
+        high: 'High',
+        medium: 'Medium',
+        low: 'Low'
+    };
+
+    const sorted = [...privateStorage.piTodos].sort((a, b) => {
+        if (a.completed === b.completed) {
+            return new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31');
+        }
+        return a.completed ? 1 : -1;
+    });
+
+    container.innerHTML = sorted.map(todo => `
+        <div class="item-card ${todo.completed ? 'item-completed' : ''}">
+            <div class="item-header">
+                <div class="item-title">${todo.title}</div>
+                <div class="item-actions">
+                    <button class="btn btn-secondary" onclick="editPiTodo('${todo.id}')">Edit</button>
+                    <button class="btn btn-danger" onclick="deletePiTodo('${todo.id}')">Delete</button>
+                </div>
+            </div>
+            <div class="item-meta">
+                <span class="badge badge-${todo.priority}">${priorityLabels[todo.priority] || todo.priority}</span>
+                ${todo.dueDate ? `<span>Due ${new Date(todo.dueDate).toLocaleDateString()}</span>` : '<span>No due date</span>'}
+            </div>
+            <div class="item-footer">
+                <button class="btn btn-success" onclick="togglePiTodo('${todo.id}')">${todo.completed ? 'Mark Active' : 'Mark Done'}</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// -- Private Export/Import --
+
+function exportPrivateData() {
+    const dataStr = JSON.stringify(privateStorage, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pi-workspace-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+function importPrivateData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            const data = JSON.parse(event.target.result);
+            privateStorage.piGoals = data.piGoals || [];
+            privateStorage.piActivities = data.piActivities || [];
+            privateStorage.piTodos = data.piTodos || [];
+            savePrivateData();
+            renderPiWorkspace();
+            alert('Private workspace restored successfully.');
+        } catch (error) {
+            alert('Unable to import private data. Please check the file.');
+            console.error('Private import error:', error);
+        }
+    };
+    reader.readAsText(file);
     e.target.value = '';
 }

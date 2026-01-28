@@ -86,6 +86,7 @@
             <button class="tab-btn" data-tab="activities">Activities</button>
             <button class="tab-btn" data-tab="publications">Publications</button>
             <button class="tab-btn" data-tab="students">Students</button>
+            <button class="tab-btn" data-tab="pi-workspace">PI Workspace</button>
         </nav>
 
         <!-- Dashboard Tab -->
@@ -377,6 +378,151 @@
 
             <!-- Students List -->
             <div id="studentsList" class="items-list"></div>
+        </div>
+
+        <!-- PI Workspace Tab -->
+        <div id="pi-workspace" class="tab-content">
+            <div class="section-header">
+                <div>
+                    <h2>PI Workspace</h2>
+                    <p class="section-subtitle">A private space for your own goals, work logs, and to-do items (stored only on this device).</p>
+                </div>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" id="piExportBtn">Export Private Data</button>
+                    <button class="btn btn-secondary" id="piImportBtn">Import Private Data</button>
+                    <input type="file" id="piImportFile" accept=".json" style="display: none;">
+                </div>
+            </div>
+
+            <div class="pi-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Active Goals</div>
+                    <div class="stat-number" id="piActiveGoals">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Work Log Entries</div>
+                    <div class="stat-number" id="piActivityCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Open To-Dos</div>
+                    <div class="stat-number" id="piTodoCount">0</div>
+                </div>
+            </div>
+
+            <div class="pi-grid">
+                <section class="pi-section">
+                    <div class="pi-section-header">
+                        <div>
+                            <h3>Academic Goals</h3>
+                            <p>Plan long-term objectives and track your own progress.</p>
+                        </div>
+                    </div>
+                    <form id="piGoalFormElement" class="pi-form">
+                        <div class="form-group">
+                            <label for="piGoalTitle">Goal *</label>
+                            <input type="text" id="piGoalTitle" required placeholder="e.g., Submit grant proposal">
+                        </div>
+                        <div class="form-group">
+                            <label for="piGoalFocus">Focus Area</label>
+                            <select id="piGoalFocus">
+                                <option value="strategy">Strategy</option>
+                                <option value="publishing">Publishing</option>
+                                <option value="funding">Funding</option>
+                                <option value="team">Team Support</option>
+                                <option value="personal">Personal Development</option>
+                                <option value="other" selected>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="piGoalDeadline">Target Date</label>
+                            <input type="date" id="piGoalDeadline">
+                        </div>
+                        <div class="form-group">
+                            <label for="piGoalDescription">Notes</label>
+                            <textarea id="piGoalDescription" rows="3" placeholder="Key steps, collaborators, reminders..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="piGoalSubmitBtn">Save Goal</button>
+                            <button type="button" class="btn btn-secondary" id="piGoalResetBtn">Clear</button>
+                        </div>
+                    </form>
+                    <div id="piGoalsList" class="items-list"></div>
+                </section>
+
+                <section class="pi-section">
+                    <div class="pi-section-header">
+                        <div>
+                            <h3>Work Log</h3>
+                            <p>Capture private activities, reflections, and wins.</p>
+                        </div>
+                    </div>
+                    <form id="piActivityFormElement" class="pi-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="piActivityDate">Date</label>
+                                <input type="date" id="piActivityDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="piActivityMood">Energy</label>
+                                <select id="piActivityMood">
+                                    <option value="focused" selected>Focused</option>
+                                    <option value="creative">Creative</option>
+                                    <option value="collaborative">Collaborative</option>
+                                    <option value="reflective">Reflective</option>
+                                    <option value="tired">Tired</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="piActivityTitle">Highlight *</label>
+                            <input type="text" id="piActivityTitle" required placeholder="e.g., Designed new experiment plan">
+                        </div>
+                        <div class="form-group">
+                            <label for="piActivityNotes">Details</label>
+                            <textarea id="piActivityNotes" rows="3" placeholder="What happened, decisions made, follow-ups..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="piActivitySubmitBtn">Log Entry</button>
+                            <button type="button" class="btn btn-secondary" id="piActivityResetBtn">Clear</button>
+                        </div>
+                    </form>
+                    <div id="piActivitiesList" class="items-list"></div>
+                </section>
+
+                <section class="pi-section">
+                    <div class="pi-section-header">
+                        <div>
+                            <h3>Personal To-Do</h3>
+                            <p>Keep track of private tasks separate from the team.</p>
+                        </div>
+                    </div>
+                    <form id="piTodoFormElement" class="pi-form">
+                        <div class="form-group">
+                            <label for="piTodoTitle">Task *</label>
+                            <input type="text" id="piTodoTitle" required placeholder="e.g., Review student proposal">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="piTodoPriority">Priority</label>
+                                <select id="piTodoPriority">
+                                    <option value="high">High</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="piTodoDueDate">Due Date</label>
+                                <input type="date" id="piTodoDueDate">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="piTodoSubmitBtn">Save Task</button>
+                            <button type="button" class="btn btn-secondary" id="piTodoResetBtn">Clear</button>
+                        </div>
+                    </form>
+                    <div id="piTodosList" class="items-list"></div>
+                </section>
+            </div>
         </div>
     </div>
 
