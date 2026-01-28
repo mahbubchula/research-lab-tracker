@@ -36,6 +36,7 @@ const privateEditing = {
     activity: null,
     todo: null
 };
+let lastSyncError = null;
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
@@ -101,6 +102,7 @@ async function syncToGist() {
     }
 
     syncConfig.syncing = true;
+    lastSyncError = null;
     updateSyncStatus();
 
     try {
@@ -130,6 +132,7 @@ async function syncToGist() {
         return true;
     } catch (error) {
         console.error('Sync to gist failed:', error);
+        lastSyncError = error.message;
         syncConfig.syncing = false;
         updateSyncStatus();
         return false;
@@ -142,6 +145,7 @@ async function syncFromGist() {
     }
 
     syncConfig.syncing = true;
+    lastSyncError = null;
     updateSyncStatus();
 
     try {
@@ -156,7 +160,16 @@ async function syncFromGist() {
         }
 
         const gist = await response.json();
-        const fileContent = gist.files['research-lab-data.json'].content;
+        const fileEntry = gist.files['research-lab-data.json'];
+        if (!fileEntry) {
+            console.warn('Gist missing research-lab-data.json. It will be created on the next sync.');
+            syncConfig.lastSync = new Date().toISOString();
+            saveSyncConfig();
+            syncConfig.syncing = false;
+            updateSyncStatus();
+            return true;
+        }
+        const fileContent = fileEntry.content;
         const data = JSON.parse(fileContent);
 
         storage.students = data.students || [];
@@ -174,6 +187,7 @@ async function syncFromGist() {
         return true;
     } catch (error) {
         console.error('Sync from gist failed:', error);
+        lastSyncError = error.message;
         syncConfig.syncing = false;
         updateSyncStatus();
         return false;
@@ -383,7 +397,8 @@ async function handleSyncSetup(e) {
     let success = await syncFromGist();
 
     if (!success) {
-        const shouldPush = confirm('Could not load existing data from GitHub. Push your current local data to initialize the shared database? This will overwrite data in the gist.');
+        const errorDetails = lastSyncError ? `\n\nGitHub responded with: ${lastSyncError}` : '';
+        const shouldPush = confirm(`Could not load existing data from GitHub.${errorDetails}\n\nClick OK to overwrite the gist with the data currently on this device (initializes a new shared database). Click Cancel to double-check your token and gist ID.`);
         if (shouldPush) {
             success = await syncToGist();
         }
